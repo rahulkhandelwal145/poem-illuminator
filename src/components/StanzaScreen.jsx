@@ -13,8 +13,9 @@ function SourceBadge({ source }) {
   if (!source) return null
   const map = {
     groq:     { icon: '✓', label: 'Groq · llama-3.3-70b', cls: 'badge--success' },
-    ollama:   { icon: '✓', label: 'Ollama · local',    cls: 'badge--success' },
-    fallback: { icon: '⚠', label: 'Fallback prompt',   cls: 'badge--warn'    },
+    ollama:   { icon: '✓', label: 'Ollama · local',        cls: 'badge--success' },
+    fallback: { icon: '⚠', label: 'Fallback prompt',       cls: 'badge--warn'    },
+    edited:   { icon: '✎', label: 'Edited prompt',         cls: 'badge--warn'    },
   }
   const cfg = map[source]
   if (!cfg) return null
@@ -29,6 +30,8 @@ export default function StanzaScreen() {
   const isLast = currentIndex === stanzas.length - 1
 
   const [promptOpen, setPromptOpen] = useState(false)
+  const [editingPrompt, setEditingPrompt] = useState(false)
+  const [draftPrompt, setDraftPrompt] = useState('')
 
   // LLM: fetch visual prompt (skip if already cached)
   const llm = useLLM(stanza, result?.visualPrompt ?? null, poem, theme)
@@ -58,6 +61,27 @@ export default function StanzaScreen() {
   const handleRegenerate = () => {
     updateResult(currentIndex, { selectedImage: null })
     regenerateImages()
+  }
+
+  const startEdit = () => {
+    setDraftPrompt(activePrompt || '')
+    setEditingPrompt(true)
+    setPromptOpen(true)
+  }
+
+  const saveEdit = () => {
+    const trimmed = draftPrompt.trim()
+    if (trimmed && trimmed !== activePrompt) {
+      updateResult(currentIndex, { visualPrompt: trimmed, llmSource: 'edited' })
+      updateResult(currentIndex, { selectedImage: null })
+      regenerateImages()
+    }
+    setEditingPrompt(false)
+  }
+
+  const cancelEdit = () => {
+    setEditingPrompt(false)
+    setDraftPrompt('')
   }
 
   const handleSelect = (url) => {
@@ -103,18 +127,45 @@ export default function StanzaScreen() {
             <>
               <div className="llm-header">
                 <SourceBadge source={result?.llmSource ?? llm.source} />
-                <button
-                  className="prompt-toggle"
-                  onClick={() => setPromptOpen((v) => !v)}
-                  aria-expanded={promptOpen}
-                >
-                  {promptOpen ? '▲ Hide prompt' : '▼ Visual prompt'}
-                </button>
+                <div className="llm-header__actions">
+                  <button
+                    className="prompt-toggle"
+                    onClick={() => setPromptOpen((v) => !v)}
+                    aria-expanded={promptOpen}
+                  >
+                    {promptOpen ? '▲ Hide prompt' : '▼ Visual prompt'}
+                  </button>
+                  {activePrompt && !editingPrompt && (
+                    <button className="prompt-edit-btn" onClick={startEdit}>
+                      ✎ Edit
+                    </button>
+                  )}
+                </div>
               </div>
               {promptOpen && activePrompt && (
-                <div className="visual-prompt-box">
-                  <p>{activePrompt}</p>
-                </div>
+                editingPrompt ? (
+                  <div className="visual-prompt-box visual-prompt-box--editing">
+                    <textarea
+                      className="prompt-textarea"
+                      value={draftPrompt}
+                      onChange={(e) => setDraftPrompt(e.target.value)}
+                      rows={4}
+                      autoFocus
+                    />
+                    <div className="prompt-edit-actions">
+                      <button className="btn-notched" onClick={saveEdit}>
+                        ✓ Apply & Regenerate
+                      </button>
+                      <button className="btn-notched btn-ghost" onClick={cancelEdit}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="visual-prompt-box">
+                    <p>{activePrompt}</p>
+                  </div>
+                )
               )}
             </>
           )}

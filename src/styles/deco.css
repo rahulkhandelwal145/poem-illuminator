@@ -351,6 +351,13 @@
   flex-wrap: wrap;
 }
 
+.llm-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 .llm-loading {
   display: flex;
   flex-direction: column;
@@ -404,6 +411,54 @@
   font-size: 0.9rem;
   color: var(--color-taupe);
   line-height: 1.65;
+}
+
+.prompt-edit-btn {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  color: var(--color-gold-border);
+  cursor: pointer;
+  border: none;
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 32px;
+  padding: 0;
+}
+
+.prompt-edit-btn:hover {
+  color: var(--color-charcoal);
+}
+
+.visual-prompt-box--editing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.prompt-textarea {
+  width: 100%;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--color-charcoal);
+  line-height: 1.65;
+  background: var(--color-cream);
+  border: 1px solid var(--color-gold-light);
+  padding: 0.6rem 0.75rem;
+  resize: vertical;
+  outline: none;
+}
+
+.prompt-textarea:focus {
+  border-color: var(--color-gold-border);
+}
+
+.prompt-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* ─── IMAGE GRID ─── */

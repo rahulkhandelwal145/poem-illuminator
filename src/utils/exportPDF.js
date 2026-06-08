@@ -1,4 +1,5 @@
-const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX']
+const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X',
+               'XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX']
 
 function loadImageAsBase64(url) {
   return new Promise((resolve, reject) => {
@@ -17,20 +18,16 @@ function loadImageAsBase64(url) {
 }
 
 function drawPageShell(doc, W, H) {
-  // Parchment fill
   doc.setFillColor(250, 246, 238)
   doc.rect(0, 0, W, H, 'F')
-  // Outer border
   doc.setDrawColor(184, 150, 62)
   doc.setLineWidth(1.5)
-  doc.rect(22, 22, W - 44, H - 44)
-  // Inner border
+  doc.rect(20, 20, W - 40, H - 40)
   doc.setDrawColor(212, 175, 106)
-  doc.setLineWidth(0.5)
-  doc.rect(28, 28, W - 56, H - 56)
-  // Corner marks
-  const arms = 10
-  const corners = [[22, 22], [W - 22, 22], [22, H - 22], [W - 22, H - 22]]
+  doc.setLineWidth(0.4)
+  doc.rect(26, 26, W - 52, H - 52)
+  const arms = 12
+  const corners = [[20,20],[W-20,20],[20,H-20],[W-20,H-20]]
   corners.forEach(([cx, cy]) => {
     doc.setDrawColor(184, 150, 62)
     doc.setLineWidth(1.2)
@@ -39,12 +36,14 @@ function drawPageShell(doc, W, H) {
   })
 }
 
-function drawDoubleRule(doc, y, W) {
+function drawRule(doc, y, W, double = true) {
   doc.setDrawColor(184, 150, 62)
-  doc.setLineWidth(1)
-  doc.line(40, y, W - 40, y)
-  doc.setLineWidth(0.3)
-  doc.line(40, y + 4, W - 40, y + 4)
+  doc.setLineWidth(0.8)
+  doc.line(38, y, W - 38, y)
+  if (double) {
+    doc.setLineWidth(0.25)
+    doc.line(38, y + 4, W - 38, y + 4)
+  }
 }
 
 export async function exportPDF({ poem, results }) {
@@ -58,72 +57,84 @@ export async function exportPDF({ poem, results }) {
   const W = doc.internal.pageSize.getWidth()
   const H = doc.internal.pageSize.getHeight()
 
-  // ── Cover Page ──
+  // Remove the auto-created blank page and manage all pages explicitly
+  doc.deletePage(1)
+
+  // ── Cover Page ────────────────────────────────────────────────────────────
+  doc.addPage()
   drawPageShell(doc, W, H)
 
+  // Title centred vertically on the page
+  const titleY = H / 2 - 30
   doc.setFont('times', 'bolditalic')
-  doc.setFontSize(32)
+  doc.setFontSize(42)
   doc.setTextColor(26, 18, 8)
-  doc.text(poem.title || 'Untitled', W / 2, 105, { align: 'center' })
+  doc.text(poem.title || 'Untitled', W / 2, titleY, { align: 'center' })
 
   if (poem.author) {
+    drawRule(doc, titleY + 18, W, false)
     doc.setFont('times', 'italic')
-    doc.setFontSize(14)
+    doc.setFontSize(16)
     doc.setTextColor(122, 104, 72)
-    doc.text(poem.author, W / 2, 128, { align: 'center' })
+    doc.text(poem.author, W / 2, titleY + 42, { align: 'center' })
   }
 
-  drawDoubleRule(doc, 148, W)
-
-  doc.setFont('times', 'italic')
-  doc.setFontSize(9)
-  doc.setTextColor(184, 150, 62)
-  doc.text('◆ verse made luminous ◆', W / 2, 166, { align: 'center' })
-
-  // ── Stanza Pages ──
+  // ── Stanza Pages ──────────────────────────────────────────────────────────
   for (let i = 0; i < results.length; i++) {
     const result = results[i]
     doc.addPage()
     drawPageShell(doc, W, H)
 
-    let textStartY = 80
+    // Page number (top right)
+    doc.setFont('times', 'italic')
+    doc.setFontSize(8)
+    doc.setTextColor(184, 150, 62)
+    doc.text(`${i + 1} / ${results.length}`, W - 38, 38, { align: 'right' })
+
+    let textStartY
 
     if (result.selectedImage) {
       try {
         const imgData = await loadImageAsBase64(result.selectedImage)
-        const imgAreaH = H * 0.44
-        doc.addImage(imgData, 'JPEG', 38, 38, W - 76, imgAreaH, undefined, 'MEDIUM')
-        drawDoubleRule(doc, 38 + imgAreaH + 12, W)
-        textStartY = 38 + imgAreaH + 30
+        const imgH = H * 0.46
+        doc.addImage(imgData, 'JPEG', 36, 36, W - 72, imgH, undefined, 'MEDIUM')
+        drawRule(doc, 36 + imgH + 10, W)
+        textStartY = 36 + imgH + 30
       } catch {
-        drawDoubleRule(doc, 55, W)
-        textStartY = 80
+        drawRule(doc, 52, W)
+        textStartY = 75
       }
     } else {
-      drawDoubleRule(doc, 55, W)
-      textStartY = 80
+      drawRule(doc, 52, W)
+      textStartY = 75
     }
 
-    // Stanza label
+    // Stanza label — use Roman numeral with Latin-1 safe delimiters
+    const label = `—  Stanza ${ROMAN[i] || i + 1}  —`
     doc.setFont('times', 'italic')
-    doc.setFontSize(8)
+    doc.setFontSize(8.5)
     doc.setTextColor(184, 150, 62)
-    const label = `◆ Stanza ${ROMAN[i] || i + 1} ◆`
     doc.text(label, W / 2, textStartY, { align: 'center' })
 
     // Stanza text
     doc.setFont('times', 'italic')
-    doc.setFontSize(13)
+    doc.setFontSize(13.5)
     doc.setTextColor(26, 18, 8)
-    const lines = doc.splitTextToSize(result.stanza, W - 120)
-    lines.forEach((line, li) => {
-      doc.text(line, W / 2, textStartY + 20 + li * 22, { align: 'center' })
+    const stanzaLines = doc.splitTextToSize(result.stanza || '', W - 130)
+
+    // Vertically center the text block in the remaining space
+    const remainingH = H - 42 - textStartY - 50
+    const textBlockH = stanzaLines.length * 23
+    const centeredY = textStartY + 18 + Math.max(0, (remainingH - textBlockH) / 2)
+
+    stanzaLines.forEach((line, li) => {
+      doc.text(line, W / 2, centeredY + li * 23, { align: 'center' })
     })
 
-    // Footer ornament
+    // Footer ornament — use Latin-1 middle dots
     doc.setFontSize(10)
     doc.setTextColor(184, 150, 62)
-    doc.text('· ✦ ·', W / 2, H - 48, { align: 'center' })
+    doc.text('·  ·  ·', W / 2, H - 38, { align: 'center' })
   }
 
   const safeName = (poem.title || 'poem').replace(/[^a-z0-9]/gi, '-').toLowerCase()
