@@ -1,0 +1,32 @@
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Docker's embedded DNS — defers resolution so nginx starts even
+    # when sd-server isn't running
+    resolver 127.0.0.11 valid=30s;
+
+    # SPA fallback
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy /cf-generate → Cloudflare Workers AI
+    # CF_ACCOUNT_ID and CF_TOKEN are injected by envsubst at container start
+    location /cf-generate {
+        proxy_pass https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell;
+        proxy_set_header Host api.cloudflare.com;
+        proxy_set_header Authorization "Bearer ${CF_TOKEN}";
+        proxy_ssl_server_name on;
+        proxy_read_timeout 60s;
+    }
+
+    # Proxy /local-generate → local SD model server on host machine
+    location /local-generate {
+        set $upstream http://host.docker.internal:8083/generate;
+        proxy_pass $upstream;
+        proxy_set_header Content-Type application/json;
+        proxy_read_timeout 300s;
+    }
+}

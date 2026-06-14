@@ -1,69 +1,53 @@
-const HF_TOKEN = import.meta.env.VITE_HF_TOKEN
 const DEFAULT_STYLE = ', painterly illuminated manuscript, warm golden light, art nouveau, parchment tones'
 
-// ── Tier 1: HuggingFace Inference API ────────────────────────────────────────
-async function tryHuggingFace(prompt, signal, themeStyle) {
+// ── Tier 1: Cloudflare Workers AI via /cf-generate proxy ─────────────────────
+// nginx (Docker) and Vite dev server both proxy this to api.cloudflare.com,
+// adding the Authorization header server-side (credentials never in browser JS)
+async function tryCloudflare(prompt, signal, themeStyle) {
   const style = themeStyle || DEFAULT_STYLE
   const fullPrompt = prompt + style
-  console.log('[HF] → POST FLUX.1-schnell')
-  console.log('[HF] prompt:', fullPrompt.slice(0, 120) + (fullPrompt.length > 120 ? '…' : ''))
+  console.log('[CF] → POST /cf-generate')
+  console.log('[CF] prompt:', fullPrompt.slice(0, 120) + (fullPrompt.length > 120 ? '…' : ''))
 
-  const res = await fetch(
-    'https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${HF_TOKEN}`,
-      },
-      body: JSON.stringify({
-        inputs: fullPrompt,
-        parameters: { num_inference_steps: 4, guidance_scale: 3.5 },
-      }),
-      signal,
-    }
-  )
+  const res = await fetch('/cf-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: fullPrompt, num_steps: 4 }),
+    signal,
+  })
 
-  console.log('[HF] ← status:', res.status, res.statusText)
+  console.log('[CF] ← status:', res.status, res.statusText)
 
   if (!res.ok) {
-    const retryAfter = res.headers.get('retry-after') || res.headers.get('x-ratelimit-reset-requests')
-    const remaining = res.headers.get('x-ratelimit-remaining-requests')
-    const limit = res.headers.get('x-ratelimit-limit-requests')
-
     let body = ''
     try { body = await res.text() } catch (_) {}
-    const bodySnippet = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200)
-
-    if (res.status === 429) {
-      console.warn(`[HF] 429 Rate limit exceeded`)
-      if (limit) console.warn(`[HF] limit: ${limit}, remaining: ${remaining}`)
-      if (retryAfter) console.warn(`[HF] retry-after: ${retryAfter}s`)
-      if (bodySnippet) console.warn(`[HF] body: ${bodySnippet}`)
-    } else if (res.status === 401) {
-      console.warn('[HF] 401 Unauthorized — token invalid or revoked')
-    } else if (res.status === 403) {
-      console.warn('[HF] 403 Forbidden — accept model license at huggingface.co/black-forest-labs/FLUX.1-schnell')
-    } else if (res.status === 503) {
-      console.warn('[HF] 503 Model loading — try again in ~20s')
-      if (bodySnippet) console.warn(`[HF] body: ${bodySnippet}`)
-    } else {
-      console.warn(`[HF] ${res.status} error — body: ${bodySnippet}`)
-    }
-
-    throw new Error(`HF ${res.status}`)
+    console.warn(`[CF] ${res.status} error — ${body.slice(0, 200)}`)
+    throw new Error(`CF ${res.status}`)
   }
 
   const contentType = res.headers.get('Content-Type') || ''
-  console.log('[HF] content-type:', contentType)
-  if (!contentType.startsWith('image/')) {
-    const snippet = await res.text().then(t => t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300))
-    throw new Error(`HF non-image response: ${snippet}`)
+  console.log('[CF] content-type:', contentType)
+
+  if (contentType.startsWith('image/')) {
+    const blob = await res.blob()
+    console.log('[CF] blob size:', blob.size, 'bytes')
+    if (!blob.size) throw new Error('empty blob')
+    return URL.createObjectURL(blob)
   }
 
-  const blob = await res.blob()
-  console.log('[HF] blob size:', blob.size, 'bytes')
-  if (!blob.size) throw new Error('empty blob')
+  // JSON with base64 image (CF returns JPEG encoded as base64)
+  const json = await res.json()
+  console.log('[CF] json keys:', Object.keys(json.result || {}))
+  if (!json.success || !json.result?.image) {
+    throw new Error(`CF bad response: ${JSON.stringify(json).slice(0, 200)}`)
+  }
+  const binary = atob(json.result.image)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  const mime = json.result.image.startsWith('/9j/') ? 'image/jpeg' : 'image/png'
+  const blob = new Blob([bytes], { type: mime })
+  console.log('[CF] decoded blob size:', blob.size, 'bytes')
+  if (!blob.size) throw new Error('empty decoded blob')
   return URL.createObjectURL(blob)
 }
 
@@ -164,19 +148,15 @@ function canvasPlaceholder(prompt) {
 
 // ── Main entry point ──────────────────────────────────────────────────────────
 export async function generateImage(visualPrompt, seed, signal, themeStyle) {
-  console.log('[image] token present:', !!HF_TOKEN, '| seed:', seed)
+  console.log('[image] seed:', seed)
 
-  if (HF_TOKEN) {
-    try {
-      const url = await tryHuggingFace(visualPrompt, signal, themeStyle)
-      console.log('[image] ✓ HuggingFace succeeded')
-      return url
-    } catch (e) {
-      if (e.name === 'AbortError') throw e
-      console.warn('[image] HuggingFace failed →', e.message, '— trying local API')
-    }
-  } else {
-    console.warn('[image] No VITE_HF_TOKEN — trying local API')
+  try {
+    const url = await tryCloudflare(visualPrompt, signal, themeStyle)
+    console.log('[image] ✓ Cloudflare succeeded')
+    return url
+  } catch (e) {
+    if (e.name === 'AbortError') throw e
+    console.warn('[image] Cloudflare failed →', e.message, '— trying local API')
   }
 
   try {
