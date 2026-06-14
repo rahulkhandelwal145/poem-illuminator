@@ -6,13 +6,15 @@ from io import BytesIO
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline, DDIMScheduler
 import torch
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if device == "cuda" else torch.float32
 
 pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", torch_dtype=dtype)
+# PNDM scheduler has a NoneType bug in newer diffusers — DDIM is stable
+pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 pipe.to(device)
 
 app = FastAPI()
