@@ -1,15 +1,5 @@
 services:
   sd-server:
-    build:
-      args:
-        REQUIREMENTS: requirements.txt   # CUDA wheels for Azure GPU
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     restart: always
 
   web:
