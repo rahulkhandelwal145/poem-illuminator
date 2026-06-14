@@ -1,9 +1,9 @@
-# CPU-only image for local testing.
-# For Azure GPU: change base to nvidia/cuda:12.8.0-runtime-ubuntu22.04
-# and use requirements.txt (CUDA wheels) instead of requirements.cpu.txt
+# ARG REQUIREMENTS selects CPU (default/local) or CUDA (prod/Azure GPU)
+ARG REQUIREMENTS=requirements.cpu.txt
 FROM python:3.11-slim
+ARG REQUIREMENTS=requirements.cpu.txt
 WORKDIR /app
-COPY requirements.cpu.txt ./requirements.txt
+COPY ${REQUIREMENTS} requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY src/createimage.py .
 EXPOSE 8083
