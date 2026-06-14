@@ -22,9 +22,11 @@ app = FastAPI()
 class PromptRequest(BaseModel):
     prompt: str
 
+STEPS = 15 if device == "cpu" else 30
+
 @app.post("/generate")
 def generate(request: PromptRequest):
-    image = pipe(request.prompt).images[0]
+    image = pipe(request.prompt, num_inference_steps=STEPS).images[0]
     buf = BytesIO()
     image.save(buf, format="PNG")
     buf.seek(0)
