@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '../App'
 import ProgressPips from './ProgressPips'
 import DecoRule from './DecoRule'
@@ -12,10 +12,10 @@ const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X',
 function SourceBadge({ source }) {
   if (!source) return null
   const map = {
-    groq:     { icon: '✓', label: 'Groq · llama-3.3-70b', cls: 'badge--success' },
-    ollama:   { icon: '✓', label: 'Ollama · local',        cls: 'badge--success' },
-    fallback: { icon: '⚠', label: 'Fallback prompt',       cls: 'badge--warn'    },
-    edited:   { icon: '✎', label: 'Edited prompt',         cls: 'badge--warn'    },
+    cached:   { icon: '✓', label: 'Cached prompt',   cls: 'badge--success' },
+    ollama:   { icon: '✓', label: 'Ollama · local',  cls: 'badge--success' },
+    fallback: { icon: '⚠', label: 'Fallback prompt', cls: 'badge--warn'    },
+    edited:   { icon: '✎', label: 'Edited prompt',   cls: 'badge--warn'    },
   }
   const cfg = map[source]
   if (!cfg) return null
@@ -23,7 +23,7 @@ function SourceBadge({ source }) {
 }
 
 export default function StanzaScreen() {
-  const { state, updateResult, nextStanza } = useApp()
+  const { state, updateResult, nextStanza, goToStanza } = useApp()
   const { stanzas, results, currentIndex, poem, theme } = state
   const result = results[currentIndex]
   const stanza = stanzas[currentIndex]
@@ -55,11 +55,26 @@ export default function StanzaScreen() {
     }
   }, [nextLlm.prompt, nextLlm.source])
 
-  // Image generation driven by the persisted prompt
-  const { slots, regenerate: regenerateImages } = useImages(activePrompt, theme)
+  // Persist images when all 3 slots finish — callback runs inside useImages' effect
+  // closure, so currentIndex is always the correct stanza, never stale.
+  const handleImagesLoaded = useCallback((urls) => {
+    updateResult(currentIndex, { images: urls })
+  }, [currentIndex])
+
+  // Only fetch images when no complete cached set exists for this stanza
+  const hasCompleteCache = result?.images?.length === 3
+  const { slots: freshSlots, regenerate: regenerateImages } = useImages(
+    hasCompleteCache ? null : activePrompt,
+    theme,
+    handleImagesLoaded
+  )
+
+  const displaySlots = hasCompleteCache
+    ? result.images.map(url => url ? { url, status: 'done' } : { url: null, status: 'error' })
+    : freshSlots
 
   const handleRegenerate = () => {
-    updateResult(currentIndex, { selectedImage: null })
+    updateResult(currentIndex, { selectedImage: null, images: [] })
     regenerateImages()
   }
 
@@ -72,8 +87,7 @@ export default function StanzaScreen() {
   const saveEdit = () => {
     const trimmed = draftPrompt.trim()
     if (trimmed && trimmed !== activePrompt) {
-      updateResult(currentIndex, { visualPrompt: trimmed, llmSource: 'edited' })
-      updateResult(currentIndex, { selectedImage: null })
+      updateResult(currentIndex, { visualPrompt: trimmed, llmSource: 'edited', images: [], selectedImage: null })
       regenerateImages()
     }
     setEditingPrompt(false)
@@ -173,7 +187,7 @@ export default function StanzaScreen() {
 
         {/* ── Image Grid (always 3 slots) ── */}
         <div className="image-grid">
-          {(activePrompt ? slots : [{url:null,status:'loading'},{url:null,status:'loading'},{url:null,status:'loading'}]).map((slot, i) => (
+          {(activePrompt ? displaySlots : [{url:null,status:'loading'},{url:null,status:'loading'},{url:null,status:'loading'}]).map((slot, i) => (
             <ImageCard
               key={i}
               url={slot.url}
@@ -187,6 +201,14 @@ export default function StanzaScreen() {
 
         {/* ── Actions ── */}
         <div className="action-row">
+          {currentIndex > 0 && (
+            <button
+              className="btn-notched btn-ghost"
+              onClick={() => goToStanza(currentIndex - 1)}
+            >
+              ← Back
+            </button>
+          )}
           <button
             className="btn-notched btn-ghost"
             onClick={handleRegenerate}

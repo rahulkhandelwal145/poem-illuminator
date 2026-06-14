@@ -1,6 +1,3 @@
-const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X',
-               'XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX']
-
 function loadImageAsBase64(url) {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -36,16 +33,6 @@ function drawPageShell(doc, W, H) {
   })
 }
 
-function drawRule(doc, y, W, double = true) {
-  doc.setDrawColor(184, 150, 62)
-  doc.setLineWidth(0.8)
-  doc.line(38, y, W - 38, y)
-  if (double) {
-    doc.setLineWidth(0.25)
-    doc.line(38, y + 4, W - 38, y + 4)
-  }
-}
-
 export async function exportPDF({ poem, results }) {
   if (!window.jspdf) {
     alert('PDF library not loaded. Please refresh and try again.')
@@ -64,7 +51,6 @@ export async function exportPDF({ poem, results }) {
   doc.addPage()
   drawPageShell(doc, W, H)
 
-  // Title centred vertically on the page
   const titleY = H / 2 - 30
   doc.setFont('times', 'bolditalic')
   doc.setFontSize(42)
@@ -72,7 +58,9 @@ export async function exportPDF({ poem, results }) {
   doc.text(poem.title || 'Untitled', W / 2, titleY, { align: 'center' })
 
   if (poem.author) {
-    drawRule(doc, titleY + 18, W, false)
+    doc.setDrawColor(184, 150, 62)
+    doc.setLineWidth(0.8)
+    doc.line(38, titleY + 18, W - 38, titleY + 18)
     doc.setFont('times', 'italic')
     doc.setFontSize(16)
     doc.setTextColor(122, 104, 72)
@@ -98,23 +86,28 @@ export async function exportPDF({ poem, results }) {
         const imgData = await loadImageAsBase64(result.selectedImage)
         const imgH = H * 0.46
         doc.addImage(imgData, 'JPEG', 36, 36, W - 72, imgH, undefined, 'MEDIUM')
-        drawRule(doc, 36 + imgH + 10, W)
-        textStartY = 36 + imgH + 30
+        doc.setDrawColor(184, 150, 62)
+        doc.setLineWidth(0.8)
+        doc.line(38, 36 + imgH + 10, W - 38, 36 + imgH + 10)
+        doc.setLineWidth(0.25)
+        doc.line(38, 36 + imgH + 14, W - 38, 36 + imgH + 14)
+        textStartY = 36 + imgH + 34
       } catch {
-        drawRule(doc, 52, W)
+        doc.setDrawColor(184, 150, 62)
+        doc.setLineWidth(0.8)
+        doc.line(38, 52, W - 38, 52)
+        doc.setLineWidth(0.25)
+        doc.line(38, 56, W - 38, 56)
         textStartY = 75
       }
     } else {
-      drawRule(doc, 52, W)
+      doc.setDrawColor(184, 150, 62)
+      doc.setLineWidth(0.8)
+      doc.line(38, 52, W - 38, 52)
+      doc.setLineWidth(0.25)
+      doc.line(38, 56, W - 38, 56)
       textStartY = 75
     }
-
-    // Stanza label — use Roman numeral with Latin-1 safe delimiters
-    const label = `—  Stanza ${ROMAN[i] || i + 1}  —`
-    doc.setFont('times', 'italic')
-    doc.setFontSize(8.5)
-    doc.setTextColor(184, 150, 62)
-    doc.text(label, W / 2, textStartY, { align: 'center' })
 
     // Stanza text
     doc.setFont('times', 'italic')
@@ -122,7 +115,6 @@ export async function exportPDF({ poem, results }) {
     doc.setTextColor(26, 18, 8)
     const stanzaLines = doc.splitTextToSize(result.stanza || '', W - 130)
 
-    // Vertically center the text block in the remaining space
     const remainingH = H - 42 - textStartY - 50
     const textBlockH = stanzaLines.length * 23
     const centeredY = textStartY + 18 + Math.max(0, (remainingH - textBlockH) / 2)
@@ -131,7 +123,7 @@ export async function exportPDF({ poem, results }) {
       doc.text(line, W / 2, centeredY + li * 23, { align: 'center' })
     })
 
-    // Footer ornament — use Latin-1 middle dots
+    // Footer ornament
     doc.setFontSize(10)
     doc.setTextColor(184, 150, 62)
     doc.text('·  ·  ·', W / 2, H - 38, { align: 'center' })

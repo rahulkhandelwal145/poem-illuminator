@@ -5,10 +5,13 @@ import { randomSeed } from '../utils/pollinationsUrl'
 const idle = () => ({ url: null, status: 'idle' })
 const loading = () => ({ url: null, status: 'loading' })
 
-export function useImages(visualPrompt, theme = null) {
+export function useImages(visualPrompt, theme = null, onLoad = null) {
   const [seeds, setSeeds] = useState(() => [randomSeed(), randomSeed(), randomSeed()])
   const [slots, setSlots] = useState([idle(), idle(), idle()])
   const abortRefs = useRef([null, null, null])
+  // Always call the latest onLoad even if the ref changes between effect runs
+  const onLoadRef = useRef(onLoad)
+  useEffect(() => { onLoadRef.current = onLoad }, [onLoad])
 
   function abortAll() {
     abortRefs.current.forEach((c) => c?.abort())
@@ -24,6 +27,7 @@ export function useImages(visualPrompt, theme = null) {
     let cancelled = false
 
     async function runSequential() {
+      const loadedUrls = new Array(seeds.length).fill(null)
       for (let i = 0; i < seeds.length; i++) {
         if (cancelled) break
         const ctrl = new AbortController()
@@ -31,6 +35,7 @@ export function useImages(visualPrompt, theme = null) {
         try {
           const url = await generateImage(visualPrompt, seeds[i], ctrl.signal, theme?.style)
           if (!cancelled) {
+            loadedUrls[i] = url
             setSlots((prev) => {
               const next = [...prev]
               next[i] = { url, status: 'done' }
@@ -47,6 +52,9 @@ export function useImages(visualPrompt, theme = null) {
             })
           }
         }
+      }
+      if (!cancelled && onLoadRef.current) {
+        onLoadRef.current(loadedUrls)
       }
     }
 
