@@ -1,8 +1,7 @@
 services:
-  sd-server:
-    restart: always
-
   web:
     ports:
       - "80:80"
     restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

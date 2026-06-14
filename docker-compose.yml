@@ -1,13 +1,4 @@
 services:
-  sd-server:
-    build:
-      context: .
-      dockerfile: Dockerfile.python
-    volumes:
-      - hf-cache:/root/.cache/huggingface
-    expose:
-      - "8083"
-
   web:
     build:
       context: .
@@ -16,8 +7,5 @@ services:
         VITE_HF_TOKEN: ${VITE_HF_TOKEN:-}
     ports:
       - "8080:80"
-    depends_on:
-      - sd-server
-
-volumes:
-  hf-cache:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
