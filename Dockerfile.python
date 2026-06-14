@@ -1,0 +1,10 @@
+# CPU-only image for local testing.
+# For Azure GPU: change base to nvidia/cuda:12.8.0-runtime-ubuntu22.04
+# and use requirements.txt (CUDA wheels) instead of requirements.cpu.txt
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.cpu.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src/createimage.py .
+EXPOSE 8083
+CMD ["uvicorn", "createimage:app", "--host", "0.0.0.0", "--port", "8083"]

@@ -1,0 +1,18 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_HF_TOKEN: ${VITE_HF_TOKEN:-}
+    ports:
+      - "8080:80"
+
+  sd-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    ports:
+      - "8083:8083"
+    profiles:
+      - sd
