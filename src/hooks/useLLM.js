@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 
+const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
+
 const STOP_WORDS = new Set([
   'the','a','an','and','or','but','in','on','at','to','for','of','with',
   'is','are','was','were','be','been','have','has','had','do','did','will',
@@ -31,6 +33,28 @@ function buildUserPrompt(stanza, poem, theme) {
     : ''
   const styleNote = theme?.label ? ` The illustration style is ${theme.label}.` : ''
   return `You are an illustrator creating an illuminated manuscript.${styleNote} ${context}For this stanza:\n\n"${stanza}"\n\nWrite a single image generation prompt under 70 words. Start with a specific scene, figure, or object drawn directly from the stanza's imagery and meaning. Name concrete visual subjects (people, landscapes, creatures, objects). Then add mood and atmosphere that match the poem's tone. Return ONLY the prompt, no explanation.`
+}
+
+async function tryGroq(stanza, poem, theme) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GROQ_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: buildUserPrompt(stanza, poem, theme) }],
+      max_tokens: 150,
+      temperature: 0.7,
+    }),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Groq ${res.status}: ${body.slice(0, 100)}`)
+  }
+  const data = await res.json()
+  return data.choices[0].message.content.trim()
 }
 
 async function tryOllama(stanza, poem, theme) {
@@ -75,6 +99,17 @@ export function useLLM(stanza, cached = null, poem = null, theme = null) {
     setState({ prompt: null, source: null, loading: true, error: null })
 
     async function run() {
+      if (GROQ_KEY) {
+        try {
+          const prompt = await tryGroq(stanza, poem, theme)
+          console.log('[llm] Groq ✓ visual prompt:', prompt)
+          if (!cancelled) setState({ prompt, source: 'groq', loading: false, error: null })
+          return
+        } catch (e) {
+          console.warn('[llm] Groq failed:', e.message)
+        }
+      }
+
       try {
         const prompt = await tryOllama(stanza, poem, theme)
         console.log('[llm] Ollama ✓ visual prompt:', prompt)
@@ -85,7 +120,7 @@ export function useLLM(stanza, cached = null, poem = null, theme = null) {
       }
 
       const prompt = stanzaFallback(stanza, poem)
-      console.warn('[llm] Ollama unavailable — using stanza keywords:', prompt)
+      console.warn('[llm] using stanza keywords:', prompt)
       if (!cancelled)
         setState({ prompt, source: 'fallback', loading: false, error: null })
     }

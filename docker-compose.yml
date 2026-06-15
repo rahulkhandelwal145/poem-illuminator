@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_HF_TOKEN: ${VITE_HF_TOKEN:-}
+        VITE_GROQ_API_KEY: ${VITE_GROQ_API_KEY:-}
     ports:
       - "8080:80"
     environment:
