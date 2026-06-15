@@ -33,10 +33,8 @@ export default function StanzaScreen() {
   const [editingPrompt, setEditingPrompt] = useState(false)
   const [draftPrompt, setDraftPrompt] = useState('')
 
-  // LLM: fetch visual prompt (skip if already cached)
   const llm = useLLM(stanza, result?.visualPrompt ?? null, poem, theme)
 
-  // Persist resolved prompt into global state once
   useEffect(() => {
     if (llm.prompt && !result?.visualPrompt) {
       updateResult(currentIndex, { visualPrompt: llm.prompt, llmSource: llm.source })
@@ -45,7 +43,6 @@ export default function StanzaScreen() {
 
   const activePrompt = result?.visualPrompt ?? null
 
-  // Prefetch next stanza's LLM prompt so images begin loading the moment the user arrives
   const nextIdx = currentIndex + 1
   const nextLlm = useLLM(stanzas[nextIdx] ?? null, results[nextIdx]?.visualPrompt ?? null, poem, theme)
 
@@ -55,13 +52,10 @@ export default function StanzaScreen() {
     }
   }, [nextLlm.prompt, nextLlm.source])
 
-  // Persist images when all 3 slots finish — callback runs inside useImages' effect
-  // closure, so currentIndex is always the correct stanza, never stale.
   const handleImagesLoaded = useCallback((urls) => {
     updateResult(currentIndex, { images: urls })
   }, [currentIndex])
 
-  // Only fetch images when no complete cached set exists for this stanza
   const hasCompleteCache = result?.images?.length === 3
   const { slots: freshSlots, regenerate: regenerateImages } = useImages(
     hasCompleteCache ? null : activePrompt,
@@ -118,11 +112,6 @@ export default function StanzaScreen() {
       <main className="stanza-screen__main">
         {/* ── Stanza Card ── */}
         <div className="stanza-card">
-          <div className="stanza-card__corner stanza-card__corner--tl" aria-hidden="true" />
-          <div className="stanza-card__corner stanza-card__corner--tr" aria-hidden="true" />
-          <div className="stanza-card__corner stanza-card__corner--bl" aria-hidden="true" />
-          <div className="stanza-card__corner stanza-card__corner--br" aria-hidden="true" />
-
           <div className="stanza-card__label">
             {ROMAN[currentIndex] ?? String(currentIndex + 1)}
           </div>
@@ -134,8 +123,8 @@ export default function StanzaScreen() {
         <div className="llm-section">
           {llm.loading ? (
             <div className="llm-loading">
-              <div className="loading-shimmer" style={{ height: '1.5rem', width: '55%' }} />
-              <div className="loading-shimmer" style={{ height: '1rem', width: '35%', marginTop: '0.4rem' }} />
+              <div className="loading-shimmer" style={{ height: '1.4rem', width: '50%' }} />
+              <div className="loading-shimmer" style={{ height: '0.9rem', width: '30%', marginTop: '0.4rem' }} />
             </div>
           ) : (
             <>
@@ -150,9 +139,7 @@ export default function StanzaScreen() {
                     {promptOpen ? '▲ Hide prompt' : '▼ Visual prompt'}
                   </button>
                   {activePrompt && !editingPrompt && (
-                    <button className="prompt-edit-btn" onClick={startEdit}>
-                      ✎ Edit
-                    </button>
+                    <button className="prompt-edit-btn" onClick={startEdit}>✎ Edit</button>
                   )}
                 </div>
               </div>
@@ -167,27 +154,24 @@ export default function StanzaScreen() {
                       autoFocus
                     />
                     <div className="prompt-edit-actions">
-                      <button className="btn-notched" onClick={saveEdit}>
-                        ✓ Apply & Regenerate
-                      </button>
-                      <button className="btn-notched btn-ghost" onClick={cancelEdit}>
-                        Cancel
-                      </button>
+                      <button className="btn-notched" onClick={saveEdit}>✓ Apply & Regenerate</button>
+                      <button className="btn-notched btn-ghost" onClick={cancelEdit}>Cancel</button>
                     </div>
                   </div>
                 ) : (
-                  <div className="visual-prompt-box">
-                    <p>{activePrompt}</p>
-                  </div>
+                  <div className="visual-prompt-box"><p>{activePrompt}</p></div>
                 )
               )}
             </>
           )}
         </div>
 
-        {/* ── Image Grid (always 3 slots) ── */}
+        {/* ── Image Grid ── */}
         <div className="image-grid">
-          {(activePrompt ? displaySlots : [{url:null,status:'loading'},{url:null,status:'loading'},{url:null,status:'loading'}]).map((slot, i) => (
+          {(activePrompt
+            ? displaySlots
+            : [{url:null,status:'loading'},{url:null,status:'loading'},{url:null,status:'loading'}]
+          ).map((slot, i) => (
             <ImageCard
               key={i}
               url={slot.url}
@@ -202,18 +186,11 @@ export default function StanzaScreen() {
         {/* ── Actions ── */}
         <div className="action-row">
           {currentIndex > 0 && (
-            <button
-              className="btn-notched btn-ghost"
-              onClick={() => goToStanza(currentIndex - 1)}
-            >
+            <button className="btn-notched btn-ghost" onClick={() => goToStanza(currentIndex - 1)}>
               ← Back
             </button>
           )}
-          <button
-            className="btn-notched btn-ghost"
-            onClick={handleRegenerate}
-            disabled={!activePrompt}
-          >
+          <button className="btn-notched btn-ghost" onClick={handleRegenerate} disabled={!activePrompt}>
             ↺ Regenerate
           </button>
           <button
