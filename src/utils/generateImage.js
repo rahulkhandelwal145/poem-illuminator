@@ -1,8 +1,8 @@
 const DEFAULT_STYLE = ', painterly illuminated manuscript, warm golden light, art nouveau, parchment tones'
 
 // ── Tier 1: Cloudflare Workers AI via /cf-generate proxy ─────────────────────
-// nginx (Docker) and Vite dev server both proxy this to api.cloudflare.com,
-// adding the Authorization header server-side (credentials never in browser JS)
+// Local dev: Vite proxies to api.cloudflare.com with auth injected (vite.config.js)
+// Cloudflare Pages: functions/cf-generate.js handles it server-side
 async function tryCloudflare(prompt, signal, themeStyle) {
   const style = themeStyle || DEFAULT_STYLE
   const fullPrompt = prompt + style

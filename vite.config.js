@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ mode }) => {
   // Load all env vars (not just VITE_ prefixed) so we can use CF_* server-side
   const env = loadEnv(mode, process.cwd(), '')
-  const cfAccountId = env.CF_ACCOUNT_ID || ''
-  const cfToken = env.CF_TOKEN || ''
+  const cfAccountId = env.VITE_CF_ACCOUNT_ID || ''
+  const cfToken = env.VITE_CF_TOKEN || ''
 
   return {
     plugins: [react()],

@@ -13,11 +13,11 @@ server {
     }
 
     # Proxy /cf-generate → Cloudflare Workers AI
-    # CF_ACCOUNT_ID and CF_TOKEN are injected by envsubst at container start
+    # VITE_CF_ACCOUNT_ID and VITE_CF_TOKEN are injected by envsubst at container start
     location /cf-generate {
-        proxy_pass https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell;
+        proxy_pass https://api.cloudflare.com/client/v4/accounts/${VITE_CF_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell;
         proxy_set_header Host api.cloudflare.com;
-        proxy_set_header Authorization "Bearer ${CF_TOKEN}";
+        proxy_set_header Authorization "Bearer ${VITE_CF_TOKEN}";
         proxy_ssl_server_name on;
         proxy_read_timeout 60s;
     }

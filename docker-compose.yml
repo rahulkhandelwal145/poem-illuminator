@@ -9,7 +9,7 @@ services:
     ports:
       - "8080:80"
     environment:
-      CF_ACCOUNT_ID: ${CF_ACCOUNT_ID:-}
-      CF_TOKEN: ${CF_TOKEN:-}
+      VITE_CF_ACCOUNT_ID: ${VITE_CF_ACCOUNT_ID:-}
+      VITE_CF_TOKEN: ${VITE_CF_TOKEN:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
