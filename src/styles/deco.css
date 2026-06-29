@@ -567,6 +567,103 @@
   white-space: pre-wrap;
 }
 
+/* ─── BOOK PANEL ─── */
+.book-panel {
+  max-width: 660px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.book-panel__title {
+  font-family: var(--font-ui);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.book-panel__name-row {
+  margin-bottom: 0.6rem;
+}
+
+.book-panel__name-input {
+  font-family: var(--font-display) !important;
+  font-style: italic !important;
+  font-size: 1rem !important;
+}
+
+.book-panel__list {
+  list-style: none;
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.5);
+}
+
+.book-panel__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--gold-dim);
+}
+.book-panel__item:last-child { border-bottom: none; }
+.book-panel__item--current   { background: rgba(176,120,32,0.04); }
+
+.book-panel__item-num {
+  font-family: var(--font-ui);
+  font-size: 0.52rem;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  width: 1.6rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.book-panel__item-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--text);
+  flex: 1;
+}
+
+.book-panel__item-author {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.book-panel__current-badge {
+  font-family: var(--font-ui);
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold-soft);
+  padding: 0.1rem 0.4rem;
+  flex-shrink: 0;
+}
+
+.book-panel__remove {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-muted);
+  opacity: 0.35;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0.1rem 0.25rem;
+  min-height: 28px;
+  min-width: 28px;
+  flex-shrink: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+.book-panel__remove:hover { opacity: 1; color: #b02030; }
+
 .final-screen__footer {
   position: sticky;
   bottom: 0;
@@ -577,6 +674,8 @@
   padding: 1rem;
   display: flex;
   justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   z-index: 10;
 }
 

@@ -16,6 +16,7 @@ export function useApp() {
 }
 
 const initial = {
+  book: [],
   poem: { title: '', author: '', raw: '' },
   theme: DEFAULT_THEME,
   stanzas: [],
@@ -38,7 +39,8 @@ export default function App() {
   const beginIllumination = (poem, theme) => {
     const stanzas = parsePoem(poem.raw)
     if (stanzas.length === 0) return
-    setState({
+    setState((prev) => ({
+      ...prev,
       poem,
       theme,
       stanzas,
@@ -51,7 +53,7 @@ export default function App() {
       })),
       currentIndex: 0,
       screen: 'stanza',
-    })
+    }))
   }
 
   const nextStanza = () => {
@@ -67,7 +69,21 @@ export default function App() {
     setState((prev) => ({ ...prev, currentIndex: index, screen: 'stanza' }))
   }
 
-  const ctx = { state, setState, updateResult, beginIllumination, nextStanza, goToStanza }
+  const addToBook = () => {
+    setState((prev) => ({
+      ...initial,
+      book: [...prev.book, { poem: prev.poem, results: prev.results }],
+    }))
+  }
+
+  const removeFromBook = (index) => {
+    setState((prev) => ({
+      ...prev,
+      book: prev.book.filter((_, i) => i !== index),
+    }))
+  }
+
+  const ctx = { state, setState, updateResult, beginIllumination, nextStanza, goToStanza, addToBook, removeFromBook }
 
   return (
     <AppContext.Provider value={ctx}>

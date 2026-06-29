@@ -1,16 +1,21 @@
+import { useState } from 'react'
 import { useApp } from '../App'
 import DecoRule from './DecoRule'
-import { exportPDF } from '../utils/exportPDF'
+import { exportPDF, exportBookPDF } from '../utils/exportPDF'
 
 const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X',
                'XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX']
 
 export default function FinalScreen() {
-  const { state, goToStanza } = useApp()
-  const { poem, results } = state
+  const { state, goToStanza, addToBook, removeFromBook } = useApp()
+  const { poem, results, book = [] } = state
+  const [bookTitle, setBookTitle] = useState('')
 
-  const handleExport = () => {
-    exportPDF({ poem, results })
+  const handleExport = () => exportPDF({ poem, results })
+
+  const handleExportBook = () => {
+    if (!bookTitle.trim()) return
+    exportBookPDF({ poems: [...book, { poem, results }], bookTitle: bookTitle.trim() })
   }
 
   return (
@@ -63,17 +68,65 @@ export default function FinalScreen() {
                 </div>
               )}
               <div className="final-pair__stanza">
-                <p>{result.stanza}</p>
+                <p>
+                  {result.stanza.split('\n').map((line, i, arr) => (
+                    <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                  ))}
+                </p>
               </div>
             </div>
           </article>
         ))}
       </main>
 
+      {book.length > 0 && (
+        <div className="book-panel">
+          <p className="book-panel__title">◆ Your Book · {book.length + 1} poems</p>
+          <div className="book-panel__name-row">
+            <input
+              className="input-field book-panel__name-input"
+              type="text"
+              placeholder="Name your collection…"
+              value={bookTitle}
+              onChange={(e) => setBookTitle(e.target.value)}
+            />
+          </div>
+          <ul className="book-panel__list">
+            {book.map((entry, i) => (
+              <li key={i} className="book-panel__item">
+                <span className="book-panel__item-num">{ROMAN[i] ?? i + 1}</span>
+                <span className="book-panel__item-title">{entry.poem.title || 'Untitled'}</span>
+                {entry.poem.author && <span className="book-panel__item-author">— {entry.poem.author}</span>}
+                <button className="book-panel__remove" onClick={() => removeFromBook(i)} aria-label="Remove poem from book">×</button>
+              </li>
+            ))}
+            <li className="book-panel__item book-panel__item--current">
+              <span className="book-panel__item-num">{ROMAN[book.length] ?? book.length + 1}</span>
+              <span className="book-panel__item-title">{poem.title || 'Untitled'}</span>
+              {poem.author && <span className="book-panel__item-author">— {poem.author}</span>}
+              <span className="book-panel__current-badge">current</span>
+            </li>
+          </ul>
+        </div>
+      )}
+
       <footer className="final-screen__footer">
-        <button className="btn-notched" onClick={handleExport}>
-          ⬇ Export Illuminated PDF
+        <button className="btn-notched btn-ghost" onClick={addToBook}>
+          + Add Another Poem
         </button>
+        <button className="btn-notched" onClick={handleExport}>
+          ⬇ Export PDF
+        </button>
+        {book.length > 0 && (
+          <button
+            className="btn-notched"
+            onClick={handleExportBook}
+            disabled={!bookTitle.trim()}
+            title={!bookTitle.trim() ? 'Enter a collection name above' : undefined}
+          >
+            ⬇ Export Book ({book.length + 1} poems)
+          </button>
+        )}
       </footer>
     </div>
   )
