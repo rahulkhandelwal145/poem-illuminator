@@ -230,6 +230,17 @@ button { cursor: pointer; border: none; background: none; }
   letter-spacing: 0.05em;
 }
 
+.model-down-alert {
+  color: var(--color-ruby-bright);
+  background: rgba(200,64,80,0.06);
+  border: 1px solid rgba(200,64,80,0.2);
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
 /* ══ THEME PICKER ══ */
 .theme-grid {
   display: grid;

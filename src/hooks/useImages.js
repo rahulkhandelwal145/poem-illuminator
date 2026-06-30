@@ -8,6 +8,7 @@ const loading = () => ({ url: null, status: 'loading' })
 export function useImages(visualPrompt, theme = null, onLoad = null) {
   const [seeds, setSeeds] = useState(() => [randomSeed(), randomSeed(), randomSeed()])
   const [slots, setSlots] = useState([idle(), idle(), idle()])
+  const [modelDown, setModelDown] = useState(false)
   const abortRefs = useRef([null, null, null])
   // Always call the latest onLoad even if the ref changes between effect runs
   const onLoadRef = useRef(onLoad)
@@ -23,19 +24,24 @@ export function useImages(visualPrompt, theme = null, onLoad = null) {
 
     abortAll()
     setSlots([loading(), loading(), loading()])
+    setModelDown(false)
 
     let cancelled = false
 
     async function runSequential() {
       const loadedUrls = new Array(seeds.length).fill(null)
+      const placeholderFlags = new Array(seeds.length).fill(false)
+      let anyCompleted = false
       for (let i = 0; i < seeds.length; i++) {
         if (cancelled) break
         const ctrl = new AbortController()
         abortRefs.current[i] = ctrl
         try {
-          const url = await generateImage(visualPrompt, seeds[i], ctrl.signal, theme?.style)
+          const { url, isPlaceholder } = await generateImage(visualPrompt, seeds[i], ctrl.signal, theme?.style)
           if (!cancelled) {
             loadedUrls[i] = url
+            placeholderFlags[i] = isPlaceholder
+            anyCompleted = true
             setSlots((prev) => {
               const next = [...prev]
               next[i] = { url, status: 'done' }
@@ -45,6 +51,8 @@ export function useImages(visualPrompt, theme = null, onLoad = null) {
         } catch (err) {
           if (err.name === 'AbortError') break
           if (!cancelled) {
+            placeholderFlags[i] = true
+            anyCompleted = true
             setSlots((prev) => {
               const next = [...prev]
               next[i] = { url: null, status: 'error' }
@@ -53,8 +61,11 @@ export function useImages(visualPrompt, theme = null, onLoad = null) {
           }
         }
       }
-      if (!cancelled && onLoadRef.current) {
-        onLoadRef.current(loadedUrls)
+      if (!cancelled) {
+        if (anyCompleted && placeholderFlags.every(Boolean)) {
+          setModelDown(true)
+        }
+        if (onLoadRef.current) onLoadRef.current(loadedUrls)
       }
     }
 
@@ -70,5 +81,5 @@ export function useImages(visualPrompt, theme = null, onLoad = null) {
     setSeeds([randomSeed(), randomSeed(), randomSeed()])
   }, [])
 
-  return { slots, regenerate }
+  return { slots, regenerate, modelDown }
 }

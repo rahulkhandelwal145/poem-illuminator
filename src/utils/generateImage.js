@@ -147,13 +147,15 @@ function canvasPlaceholder(prompt) {
 }
 
 // ── Main entry point ──────────────────────────────────────────────────────────
+// Returns { url, isPlaceholder } — isPlaceholder is true when both real
+// image models failed and we rendered the canvas art-deco placeholder instead.
 export async function generateImage(visualPrompt, seed, signal, themeStyle) {
   console.log('[image] seed:', seed)
 
   try {
     const url = await tryCloudflare(visualPrompt, signal, themeStyle)
     console.log('[image] ✓ Cloudflare succeeded')
-    return url
+    return { url, isPlaceholder: false }
   } catch (e) {
     if (e.name === 'AbortError') throw e
     console.warn('[image] Cloudflare failed →', e.message, '— trying local API')
@@ -162,12 +164,13 @@ export async function generateImage(visualPrompt, seed, signal, themeStyle) {
   try {
     const url = await tryLocal(visualPrompt, signal, themeStyle)
     console.log('[image] ✓ local API succeeded')
-    return url
+    return { url, isPlaceholder: false }
   } catch (e) {
     if (e.name === 'AbortError') throw e
     console.warn('[image] local API failed →', e.message, '— falling back to canvas placeholder')
   }
 
   console.log('[image] rendering canvas placeholder')
-  return canvasPlaceholder(visualPrompt)
+  const url = await canvasPlaceholder(visualPrompt)
+  return { url, isPlaceholder: true }
 }

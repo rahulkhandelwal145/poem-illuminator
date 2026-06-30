@@ -106,7 +106,12 @@ export default function InputScreen() {
                 id="pi-poem"
                 className="input-field input-field--textarea"
                 value={raw}
-                onChange={(e) => setRaw(e.target.value)}
+                onChange={(e) => setRaw(e.target.value.replace(/\r\n/g, '\n').replace(/\r/g, '\n'))}
+                onPaste={(e) => {
+                  e.preventDefault()
+                  const text = e.clipboardData.getData('text/plain')
+                  setRaw(text.replace(/\r\n/g, '\n').replace(/\r/g, '\n'))
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder="Lay your poem here, stanza by stanza…"
                 required

@@ -57,7 +57,7 @@ export default function StanzaScreen() {
   }, [currentIndex])
 
   const hasCompleteCache = result?.images?.length === 3
-  const { slots: freshSlots, regenerate: regenerateImages } = useImages(
+  const { slots: freshSlots, regenerate: regenerateImages, modelDown } = useImages(
     hasCompleteCache ? null : activePrompt,
     theme,
     handleImagesLoaded
@@ -116,7 +116,11 @@ export default function StanzaScreen() {
             {ROMAN[currentIndex] ?? String(currentIndex + 1)}
           </div>
           <DecoRule />
-          <p className="stanza-card__text">{stanza}</p>
+          <p className="stanza-card__text">
+            {stanza.split('\n').map((line, i, arr) => (
+              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+            ))}
+          </p>
         </div>
 
         {/* ── LLM Section ── */}
@@ -167,6 +171,11 @@ export default function StanzaScreen() {
         </div>
 
         {/* ── Image Grid ── */}
+        {modelDown && (
+          <p className="model-down-alert" role="alert">
+            ⚠ Image model unavailable — showing placeholder illustrations. Try ↺ Regenerate in a moment.
+          </p>
+        )}
         <div className="image-grid">
           {(activePrompt
             ? displaySlots
