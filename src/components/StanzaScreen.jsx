@@ -3,6 +3,7 @@ import { useApp } from '../App'
 import ProgressPips from './ProgressPips'
 import DecoRule from './DecoRule'
 import ImageCard from './ImageCard'
+import HomeButton from './HomeButton'
 import { useLLM } from '../hooks/useLLM'
 import { useImages } from '../hooks/useImages'
 
@@ -23,7 +24,7 @@ function SourceBadge({ source }) {
 }
 
 export default function StanzaScreen() {
-  const { state, updateResult, nextStanza, goToStanza } = useApp()
+  const { state, updateResult, nextStanza, goToStanza, backToInput } = useApp()
   const { stanzas, results, currentIndex, poem, theme } = state
   const result = results[currentIndex]
   const stanza = stanzas[currentIndex]
@@ -101,6 +102,7 @@ export default function StanzaScreen() {
   return (
     <div className="stanza-screen">
       <header className="stanza-screen__header">
+        <HomeButton />
         <ProgressPips
           total={stanzas.length}
           current={currentIndex}
@@ -194,8 +196,12 @@ export default function StanzaScreen() {
 
         {/* ── Actions ── */}
         <div className="action-row">
-          {currentIndex > 0 && (
+          {currentIndex > 0 ? (
             <button className="btn-notched btn-ghost" onClick={() => goToStanza(currentIndex - 1)}>
+              ← Back
+            </button>
+          ) : (
+            <button className="btn-notched btn-ghost" onClick={backToInput}>
               ← Back
             </button>
           )}

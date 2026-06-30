@@ -69,6 +69,14 @@ export default function App() {
     setState((prev) => ({ ...prev, currentIndex: index, screen: 'stanza' }))
   }
 
+  const goHome = () => {
+    setState((prev) => ({ ...initial, book: prev.book }))
+  }
+
+  const backToInput = () => {
+    setState((prev) => ({ ...prev, screen: 'input' }))
+  }
+
   const addToBook = () => {
     setState((prev) => ({
       ...initial,
@@ -83,7 +91,7 @@ export default function App() {
     }))
   }
 
-  const ctx = { state, setState, updateResult, beginIllumination, nextStanza, goToStanza, addToBook, removeFromBook }
+  const ctx = { state, setState, updateResult, beginIllumination, nextStanza, goToStanza, goHome, backToInput, addToBook, removeFromBook }
 
   return (
     <AppContext.Provider value={ctx}>

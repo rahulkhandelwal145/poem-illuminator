@@ -6,12 +6,12 @@ import DecoRule from './DecoRule'
 import { THEMES, DEFAULT_THEME } from '../utils/themes'
 
 export default function InputScreen() {
-  const { beginIllumination } = useApp()
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
-  const [raw, setRaw] = useState('')
+  const { state, beginIllumination } = useApp()
+  const [title, setTitle] = useState(state.poem.title)
+  const [author, setAuthor] = useState(state.poem.author)
+  const [raw, setRaw] = useState(state.poem.raw)
   const [error, setError] = useState('')
-  const [selectedTheme, setSelectedTheme] = useState(DEFAULT_THEME)
+  const [selectedTheme, setSelectedTheme] = useState(state.theme ?? DEFAULT_THEME)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
 
   useEffect(() => {

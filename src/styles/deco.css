@@ -191,6 +191,29 @@
   flex-direction: column;
 }
 
+.home-btn {
+  position: fixed;
+  top: 1rem;
+  left: 1.25rem;
+  z-index: 20;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px solid var(--gold-dim);
+  background: rgba(253,246,236,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.35rem 0.7rem;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.home-btn:hover {
+  color: var(--gold-text);
+  border-color: var(--gold);
+}
+
 .stanza-screen__header {
   padding: 1rem 1.5rem 0.8rem;
   text-align: center;

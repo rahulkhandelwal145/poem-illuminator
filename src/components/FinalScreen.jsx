@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../App'
 import DecoRule from './DecoRule'
+import HomeButton from './HomeButton'
 import { exportPDF, exportBookPDF } from '../utils/exportPDF'
 
 const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X',
@@ -20,6 +21,7 @@ export default function FinalScreen() {
 
   return (
     <div className="final-screen">
+      <HomeButton />
       <header className="final-screen__header">
         <h1 className="final-screen__title">{poem.title || 'Untitled'}</h1>
         {poem.author && (
